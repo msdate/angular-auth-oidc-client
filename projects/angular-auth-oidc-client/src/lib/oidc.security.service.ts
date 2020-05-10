@@ -1,26 +1,25 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { AuthOptions } from './auth-options';
 import { AuthStateService } from './authState/auth-state.service';
 import { CallbackService } from './callback/callback.service';
-import { ConfigurationProvider } from './config';
+import { ConfigurationProvider } from './config/config.provider';
 import { FlowsDataService } from './flows/flows-data.service';
 import { FlowsService } from './flows/flows.service';
-import { CheckSessionService, SilentRenewService } from './iframe';
+import { CheckSessionService } from './iframe/check-session.service';
+import { SilentRenewService } from './iframe/silent-renew.service';
 import { LoggerService } from './logging/logger.service';
 import { LogoffRevocationService } from './logoffRevoke/logoff-revocation.service';
-import { EventTypes } from './public-events';
-import { PublicEventsService } from './public-events/public-events.service';
 import { UserService } from './userData/user-service';
-import { RedirectService, UrlService } from './utils';
+import { RedirectService } from './utils/redirect/redirect.service';
 import { TokenHelperService } from './utils/tokenHelper/oidc-token-helper.service';
+import { UrlService } from './utils/url/url.service';
 import { TokenValidationService } from './validation/token-validation.service';
 
 @Injectable()
 export class OidcSecurityService {
     private TOKEN_REFRESH_INTERVALL_IN_SECONDS = 3;
-
-    private isModuleSetupInternal$ = new BehaviorSubject<boolean>(false);
 
     get configuration() {
         return this.configurationProvider.configuration;
@@ -38,10 +37,6 @@ export class OidcSecurityService {
         return this.checkSessionService.checkSessionChanged$;
     }
 
-    get moduleSetup$() {
-        return this.isModuleSetupInternal$.asObservable();
-    }
-
     get stsCallback$() {
         return this.callbackService.stsCallback$;
     }
@@ -54,7 +49,6 @@ export class OidcSecurityService {
         private tokenHelperService: TokenHelperService,
         private loggerService: LoggerService,
         private configurationProvider: ConfigurationProvider,
-        private publicEventsService: PublicEventsService,
         private urlService: UrlService,
         private authStateService: AuthStateService,
         private flowsDataService: FlowsDataService,
@@ -77,7 +71,6 @@ export class OidcSecurityService {
         return this.callbackService.handlePossibleStsCallback(currentUrl).pipe(
             map(() => {
                 const isAuthenticated = this.authStateService.areAuthStorageTokensValid();
-                // validate storage and @@set authorized@@ if true
                 if (isAuthenticated) {
                     this.authStateService.setAuthorizedAndFireEvent();
                     this.userService.publishUserdataIfExists();
@@ -94,10 +87,6 @@ export class OidcSecurityService {
                 }
 
                 this.loggerService.logDebug('checkAuth completed fire events, auth: ' + isAuthenticated);
-
-                // TODO EXTRACT THIS IN SERVICE LATER
-                this.publicEventsService.fireEvent(EventTypes.ModuleSetup, true);
-                this.isModuleSetupInternal$.next(true);
 
                 return isAuthenticated;
             })
@@ -130,14 +119,14 @@ export class OidcSecurityService {
     }
 
     // Code Flow with PCKE or Implicit Flow
-    authorize(urlHandler?: (url: string) => any) {
+    authorize(authOptions?: AuthOptions) {
         if (!this.configurationProvider.hasValidConfig()) {
             this.loggerService.logError('Well known endpoints must be loaded before user can login!');
             return;
         }
 
         if (!this.tokenValidationService.configValidateResponseType(this.configurationProvider.openIDConfiguration.responseType)) {
-            // invalid response_type
+            this.loggerService.logError('Invalid response type!');
             return;
         }
 
@@ -145,7 +134,9 @@ export class OidcSecurityService {
 
         this.loggerService.logDebug('BEGIN Authorize OIDC Flow, no auth data');
 
-        const url = this.urlService.getAuthorizeUrl();
+        const { urlHandler, customParams } = authOptions || {};
+
+        const url = this.urlService.getAuthorizeUrl(customParams);
 
         if (urlHandler) {
             urlHandler(url);

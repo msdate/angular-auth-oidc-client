@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { Observable } from 'rxjs';
+import { EventTypes, PublicEventsService } from '../../public-api';
 import { ConfigurationProvider } from '../config/config.provider';
 import { LoggerService } from '../logging/logger.service';
 import { LoggerServiceMock } from '../logging/logger.service-mock';
-import { EventTypes, PublicEventsService } from '../public-events';
 import { StoragePersistanceService } from '../storage/storage-persistance.service';
 import { StoragePersistanceServiceMock } from '../storage/storage-persistance.service-mock';
 import { PlatformProvider } from '../utils/platform-provider/platform.provider';
@@ -277,6 +277,20 @@ describe('Auth State Service', () => {
             const result = authStateService.hasAccessTokenExpiredIfExpiryExists();
             expect(spy).toHaveBeenCalledWith(date, 5);
             expect(result).toEqual(expectedResult);
+        });
+
+        it('throws event when token is expired', () => {
+            const validateAccessTokenNotExpiredResult = false;
+            const expectedResult = !validateAccessTokenNotExpiredResult;
+            spyOnProperty(configurationProvider, 'openIDConfiguration', 'get').and.returnValue({ renewTimeBeforeTokenExpiresInSeconds: 5 });
+            const date = new Date();
+
+            spyOn(eventsService, 'fireEvent');
+
+            spyOnProperty(storagePersistanceService, 'accessTokenExpiresIn', 'get').and.returnValue(date);
+            spyOn(tokenValidationService, 'validateAccessTokenNotExpired').and.returnValue(validateAccessTokenNotExpiredResult);
+            authStateService.hasAccessTokenExpiredIfExpiryExists();
+            expect(eventsService.fireEvent).toHaveBeenCalledWith(EventTypes.TokenExpired, expectedResult);
         });
     });
 });

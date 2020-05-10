@@ -1,4 +1,4 @@
-# Angular Lib for OpenID Connect Code Flow with PKCE and Implicit Flow
+# Angular Lib for OpenID Connect & OAuth2
 
 [![Build Status](https://travis-ci.org/damienbod/angular-auth-oidc-client.svg?branch=master)](https://travis-ci.org/damienbod/angular-auth-oidc-client) [![npm](https://img.shields.io/npm/v/angular-auth-oidc-client.svg)](https://www.npmjs.com/package/angular-auth-oidc-client) [![npm](https://img.shields.io/npm/dm/angular-auth-oidc-client.svg)](https://www.npmjs.com/package/angular-auth-oidc-client) [![npm](https://img.shields.io/npm/l/angular-auth-oidc-client.svg)](https://www.npmjs.com/package/angular-auth-oidc-client)
 
@@ -14,10 +14,12 @@ This library is <a href="http://openid.net/certification/#RPs">certified</a> by 
 
 -   Supports OpenID Connect Code Flow with PKCE
 -   Supports Code Flow PKCE with Refresh tokens
--   Revocation Enpoint
+-   Supports Revocation Endpoint
+-   Support for current best practice
+-   Implements OIDC validation as specified, complete client side validation for REQUIRED features
 -   [Supports OpenID Connect Implicit Flow](http://openid.net/specs/openid-connect-implicit-1_0.html)
--   Complete client side validation for REQUIRED features
 -   [OpenID Connect Session Management 1.0](http://openid.net/specs/openid-connect-session-1_0.html)
+-   Samples for most of the common use cases
 
 ## Installation
 
@@ -35,18 +37,18 @@ or with yarn
 
 ## Documentation
 
--   [Quickstart](docs/quickstart.md)
--   [Samples](docs/samples.md)
--   [Silent renew](docs/silent-renew.md)
--   [Guards](docs/guards.md)
--   [Features](docs/features.md)
--   [Logout](docs/logout.md)
--   [Using and revoking the access token](docs/using-access-tokens.md)
--   [CSP & CORS](docs/csp-cors-config.md)
--   [Public API](docs/public-api.md)
--   [Configuration](docs/configuration.md)
--   [Migration](docs/migration.md)
--   [Changelog](CHANGELOG.md)
+-   [Quickstart](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/quickstart.md)
+-   [Samples](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/samples.md)
+-   [Silent renew](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/silent-renew.md)
+-   [Guards](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/guards.md)
+-   [Features](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/features.md)
+-   [Logout](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/logout.md)
+-   [Using and revoking the access token](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/using-access-tokens.md)
+-   [CSP & CORS](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/csp-cors-config.md)
+-   [Public API](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/public-api.md)
+-   [Configuration](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/configuration.md)
+-   [Migration](https://github.com/damienbod/angular-auth-oidc-client/tree/master/docs/migration.md)
+-   [Changelog](https://github.com/damienbod/angular-auth-oidc-client/tree/master/CHANGELOG.md)
 
 ## Quickstart
 
@@ -64,13 +66,13 @@ export function configureAuth(oidcConfigService: OidcConfigService) {
     return () =>
         oidcConfigService.withConfig({
             stsServer: 'https://offeringsolutions-sts.azurewebsites.net',
-            redirectUrl: 'https://localhost:4200',
-            postLogoutRedirectUri: 'https://localhost:4200',
+            redirectUrl: window.location.origin,
+            postLogoutRedirectUri: window.location.origin,
             clientId: 'angularClient',
             scope: 'openid profile email',
             responseType: 'code',
             silentRenew: true,
-            silentRenewUrl: 'https://localhost:4200/silent-renew.html',
+            silentRenewUrl: `${window.location.origin}/silent-renew.html`,
             logLevel: LogLevel.Debug,
         });
 }
@@ -109,7 +111,7 @@ export class AppComponent implements OnInit {
     constructor(public oidcSecurityService: OidcSecurityService) {}
 
     ngOnInit() {
-        this.oidcSecurityService.checkAuth().subscribe((isAuthenticated) => console.log('app authenticated', isAuthenticated));
+        this.oidcSecurityService.checkAuth().subscribe((auth) => console.log('is authenticated', auth));
     }
 
     login() {
@@ -147,3 +149,9 @@ const httpOptions = {
 ## License
 
 MIT
+
+## Version 10
+
+if you need information about version 10 please search here
+
+https://github.com/damienbod/angular-auth-oidc-client/tree/version-10

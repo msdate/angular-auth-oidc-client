@@ -3,6 +3,8 @@
 -   [Public Events](#public-events)
 -   [Custom Storage](#custom-storage)
 -   [Custom parameters](#custom-parameters)
+-   [OnAuthorizationResult Event](#onauthorizationresult-event)
+-   [Using the OIDC package in a module or a Angular lib](#using-the-oidc-package-in-a-module-or-a-angular-lib)
 
 ## Public Events
 
@@ -13,7 +15,6 @@ Currently the events
 ```typescript
 {
     ConfigLoaded,
-    ModuleSetup,
     CheckSessionReceived,
     UserDataChanged,
     NewAuthorizationResult,
@@ -109,25 +110,29 @@ export function loadConfig(oidcConfigService: OidcConfigService) {
 }
 ```
 
+## Dynamic custom parameters
 
-## onAuthorizationResult: Observable<AuthorizationResult>
+If you want to pass dynamic custom parameters with the request url to the sts you can do that by passing the parameters into the `authorize` method.
+
+```typescript
+login() {
+    this.oidcSecurityService.authorize({ customParams: { 'ui_locales: 'de-CH' });
+}
+
+```
+
+> If you want to pass staitc parameters to the sts everytime please use the custom parameters in the [Configuration](configuration.md) instead!
+
+## OnAuthorizationResult Event
 
 This event returns the result of the authorization callback.
-
 
 Subscribe to the event:
 
 ```typescript
 //...
     this.onAuthorizationResultSubscription = this.oidcSecurityService.onAuthorizationResult.pipe(
-        tap((authorizationResult: AuthorizationResult) => {
-            console.log('Auth result received AuthorizationState:'
-                + authorizationResult.authorizationState
-                + ' validationResult:' + authorizationResult.validationResult
-                + ' isRenewProcess:' + authorizationResult.isRenewProcess);
-        }),
-        map((authorizationResult: AuthorizationResult) => authorizationResult.authorizationState),
-        filter((authorizationState: AuthorizationState) => authorizationState === AuthorizationState.unauthorized)
+        filter((authorizationState: AuthorizationState) => authorizationResult.authorizationState === AuthorizationState.unauthorized)
     ).subscribe(() => {
         this.router.navigate(['/unauthorized']);
     });
@@ -142,3 +147,55 @@ ngOnDestroy(): void {
 }
 ```
 
+## Using the OIDC package in a module or a Angular lib
+
+This example shows how you could set the configuration when loading a child module.
+
+> This is not recommended. Please use the initialization on root level.
+
+You can use the `APP_INITIALIZER` also in child modules with the same syntax.
+
+```typescript
+import { NgModule, APP_INITIALIZER } from '@angular/core';
+import { AuthModule, OidcConfigService, LogLevel } from 'angular-auth-oidc-client';
+import { HttpClientModule } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+
+export function configureAuth(oidcConfigService: OidcConfigService) {
+    const action$ = oidcConfigService.withConfig({
+        stsServer: 'https://offeringsolutions-sts.azurewebsites.net',
+        redirectUrl: window.location.origin,
+        postLogoutRedirectUri: window.location.origin,
+        clientId: 'angularClient',
+        scope: 'openid profile email',
+        responseType: 'code',
+        silentRenew: true,
+        silentRenewUrl: `${window.location.origin}/silent-renew.html`,
+        renewTimeBeforeTokenExpiresInSeconds: 10,
+        logLevel: LogLevel.Debug,
+    });
+    return () => action$;
+}
+
+@NgModule({
+    declarations: [
+        /* */
+    ],
+    imports: [AuthModule.forRoot(), HttpClientModule, CommonModule, RouterModule],
+    exports: [
+        /* */
+    ],
+    providers: [
+        {
+            provide: APP_INITIALIZER,
+            useFactory: configureAuth,
+            deps: [OidcConfigService],
+            multi: true,
+        },
+    ],
+})
+export class ChildModule {}
+```
+
+The components code is the same then as using it in the main or any other module.

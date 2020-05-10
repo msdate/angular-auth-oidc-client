@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { LoggerService } from '../logging/logger.service';
 import { LoggerServiceMock } from '../logging/logger.service-mock';
-import { StoragePersistanceService } from '../storage';
+import { StoragePersistanceService } from '../storage/storage-persistance.service';
 import { StoragePersistanceServiceMock } from '../storage/storage-persistance.service-mock';
 import { FlowsDataService } from './flows-data.service';
 import { RandomService } from './random/random.service';
@@ -121,6 +121,22 @@ describe('Flows Data Service', () => {
             expect(result).toBeTruthy();
             expect(result.length).toBe(67);
             expect(setSpy).toHaveBeenCalledWith(result);
+        });
+    });
+
+    describe('setSilentRenewRunning', () => {
+        it('set setSilentRenewRunning to `running` when called', () => {
+            const spy = spyOnProperty(storagePersistanceService, 'silentRenewRunning', 'set');
+            service.setSilentRenewRunning();
+            expect(spy).toHaveBeenCalledWith('running');
+        });
+    });
+
+    describe('resetSilentRenewRunning', () => {
+        it('set resetSilentRenewRunning to `` when called', () => {
+            const spy = spyOnProperty(storagePersistanceService, 'silentRenewRunning', 'set');
+            service.resetSilentRenewRunning();
+            expect(spy).toHaveBeenCalledWith('');
         });
     });
 });
