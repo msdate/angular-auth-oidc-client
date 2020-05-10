@@ -190,6 +190,18 @@ describe('ConfigurationProviderTests', () => {
         expect(spy).toHaveBeenCalled();
     });
 
+    it('setConfig with passed storage calls console.warn', () => {
+        const config = {
+            storage: sessionStorage,
+        };
+
+        const spy = spyOn(console, 'warn');
+
+        configurationProvider.setConfig(config, null);
+
+        expect(spy).toHaveBeenCalled();
+    });
+
     it('silent_renew and start_checksession can be set to true when using the browser platform', () => {
         const config: OpenIdConfiguration = {
             silentRenew: true,
